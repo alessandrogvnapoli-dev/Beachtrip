@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Let's go to the beach 🌊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#EFF7FA;--bg2:#ffffff;--bg3:#D8EEF5;
+  --text:#0F2B35;--text2:#4A7080;--text3:#85A8B5;
+  --border:rgba(15,43,53,0.10);--border2:rgba(15,43,53,0.20);
+  --accent:#0E7490;--accent-dark:#085E75;--accent2:#0891B2;
+  --accent-light:#E0F4FA;--radius:12px;--radius-sm:8px;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.6;min-height:100vh;}
+.hero{background:linear-gradient(160deg,#0E7490 0%,#0369A1 60%,#0C4A6E 100%);color:#fff;text-align:center;padding:4rem 2rem 3.5rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 10% 120%,rgba(6,182,212,.30) 0%,transparent 55%),radial-gradient(ellipse 50% 50% at 90% -10%,rgba(186,230,253,.15) 0%,transparent 50%);pointer-events:none;}
+.hero-tag{display:inline-block;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.65);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:5px 16px;margin-bottom:1.25rem;}
+.hero h1{font-family:'Playfair Display',serif;font-size:clamp(34px,7vw,56px);font-weight:400;line-height:1.1;color:#fff;margin-bottom:.75rem;}
+.hero h1 em{font-style:italic;opacity:.85;}
+.hero-sub{font-size:14px;font-weight:300;color:rgba(255,255,255,.70);max-width:380px;margin:0 auto;}
+.wave{display:block;width:100%;height:48px;margin-bottom:-2px;}
+.container{max-width:820px;margin:0 auto;padding:2rem 1.5rem 4rem;}
+.meta-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:2.5rem;}
+.meta-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;}
+.meta-label{font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;}
+.meta-value{font-size:15px;font-weight:500;color:var(--text);}
+.meta-sub{font-size:12px;color:var(--text2);}
+.people-ctrl{display:flex;align-items:center;gap:8px;margin-top:4px;}
+.people-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border2);background:transparent;cursor:pointer;font-size:15px;color:var(--text);display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.people-btn:hover{background:var(--bg3);}
+#pcount{font-size:15px;font-weight:500;min-width:16px;text-align:center;}
+.section{margin-bottom:2.5rem;}
+.section-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:400;margin-bottom:3px;}
+.section-sub{font-size:13px;color:var(--text2);margin-bottom:1rem;}
+.tabs{display:flex;gap:8px;margin-bottom:1.25rem;}
+.tab{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:7px 18px;border-radius:99px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;}
+.tab:hover{background:var(--bg3);}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.transport-panel{display:none;}
+.transport-panel.active{display:block;}
+.t-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;margin-bottom:10px;cursor:pointer;transition:border-color .15s;}
+.t-card:hover{border-color:var(--accent);}
+.t-card.selected{border:2px solid var(--accent);background:var(--accent-light);}
+.t-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;}
+.t-name{font-weight:500;font-size:15px;margin-bottom:2px;}
+.t-sub{font-size:12px;color:var(--text2);}
+.price-pill{font-size:13px;font-weight:500;background:var(--bg3);border-radius:99px;padding:5px 13px;white-space:nowrap;color:var(--text);}
+.t-card.selected .price-pill{background:var(--accent);color:#fff;}
+.route-line{display:flex;align-items:center;gap:8px;margin:10px 0;font-size:12px;color:var(--text2);}
+.route-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;}
+.route-dash{flex:1;border-top:1.5px dashed var(--border2);}
+.t-details{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--text2);}
+.hint{font-size:11px;color:var(--text3);margin-top:8px;padding:0 2px;line-height:1.5;}
+#map{width:100%;height:400px;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+.spot-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-top:14px;display:none;}
+.spot-panel.visible{display:block;}
+.spot-header{padding:16px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start;}
+.spot-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;margin-bottom:3px;}
+.spot-desc{font-size:13px;color:var(--text2);max-width:500px;line-height:1.5;}
+.spot-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text3);line-height:1;padding:2px;}
+.spot-close:hover{color:var(--text);}
+.carousel{position:relative;background:#0a0a0a;overflow:hidden;line-height:0;min-height:200px;}
+.c-slide{display:none;width:100%;position:relative;}
+.c-slide.active{display:block;}
+.c-slide img{width:100%;height:auto;max-height:480px;object-fit:contain;display:block;margin:0 auto;}
+.c-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.55));color:#fff;font-size:11px;padding:20px 14px 10px;letter-spacing:.02em;pointer-events:none;}
+.car-btn{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.9);border:none;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.2);transition:background .15s;}
+.car-btn:hover{background:#fff;}
+.car-prev{left:12px;}
+.car-next{right:12px;}
+.car-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:5;}
+.c-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.3);}
+.c-dot.active{background:#fff;}
+.search-links{padding:14px 18px 16px;display:flex;flex-wrap:wrap;gap:8px;border-top:1px solid var(--border);}
+.search-btn{display:inline-flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;padding:8px 15px;border-radius:99px;text-decoration:none;border:1px solid var(--border2);color:var(--text);background:var(--bg);transition:all .15s;white-space:nowrap;}
+.search-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.src-tag{font-size:10px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-right:2px;}
+.search-hint{font-size:11px;color:var(--text3);padding:0 18px 14px;margin-top:-4px;}
+.summary{background:linear-gradient(135deg,var(--accent-dark) 0%,var(--accent2) 100%);border-radius:var(--radius);padding:1.5rem 1.5rem 1.25rem;color:#fff;margin-top:2.5rem;}
+.summary-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;margin-bottom:1rem;opacity:.9;}
+.s-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:14px;border-bottom:1px solid rgba(255,255,255,.15);}
+.s-row .lbl{opacity:.75;}
+.s-row .val{font-weight:500;}
+.s-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:4px;}
+.s-total .lbl{font-family:'Playfair Display',serif;font-size:16px;opacity:.85;}
+.s-total .val{font-size:22px;font-weight:500;}
+.s-pp{font-size:12px;opacity:.6;margin-top:4px;text-align:right;}
+.s-empty{font-size:13px;opacity:.65;text-align:center;padding:1rem 0 .5rem;font-style:italic;}
+.cta{text-align:center;padding:2.5rem 0 1rem;border-top:1px solid var(--border);margin-top:2.5rem;}
+.cta-text{font-size:13px;color:var(--text2);margin-bottom:1rem;}
+.cta-btn{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;padding:12px 32px;border-radius:99px;border:none;background:var(--accent);color:#fff;cursor:pointer;transition:opacity .15s;}
+.cta-btn:hover{opacity:.88;}
+#copy-confirm{font-size:12px;color:var(--accent);margin-top:10px;display:none;}
+footer{text-align:center;font-size:12px;color:var(--text3);padding:1rem 0 2rem;}
+.custom-pin{background:var(--accent);color:#fff;border-radius:99px;padding:5px 11px;font-size:11px;font-weight:500;font-family:'DM Sans',sans-serif;white-space:nowrap;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:pointer;transition:all .15s;}
+.custom-pin.active-pin{background:var(--accent-dark);transform:scale(1.08);box-shadow:0 3px 14px rgba(0,0,0,.3);}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">Liguria · 14–16 July 2026</div>
+  <h1>Let's go to<br><em>the beach</em> 🌊</h1>
+  <p class="hero-sub">Explore the coast, pick a spot, and we'll find you somewhere to stay.</p>
+</div>
+<svg class="wave" viewBox="0 0 1440 48" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0,48 L0,28 C200,8 400,48 600,32 C800,16 1000,44 1200,26 C1320,14 1380,36 1440,22 L1440,48 Z" fill="#EFF7FA"/>
+</svg>
+
+<div class="container">
+  <div class="meta-row">
+    <div class="meta-card"><div class="meta-label">Dates</div><div class="meta-value">14 – 16 July</div><div class="meta-sub">2 nights</div></div>
+    <div class="meta-card"><div class="meta-label">Departing from</div><div class="meta-value">Pavia</div><div class="meta-sub">~1.5 hrs to coast</div></div>
+    <div class="meta-card"><div class="meta-label">Destination</div><div class="meta-value">Liguria</div><div class="meta-sub">Italian Riviera</div></div>
+    <div class="meta-card">
+      <div class="meta-label">Group size</div>
+      <div class="people-ctrl">
+        <button class="people-btn" onclick="changePeople(-1)">−</button>
+        <span id="pcount">4</span>
+        <button class="people-btn" onclick="changePeople(1)">+</button>
+        <span class="meta-sub" style="margin-left:2px">people</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">How are we getting there?</div>
+    <div class="section-sub">Click an option to add it to the trip total.</div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('train',this)">🚂 Train</button>
+      <button class="tab" onclick="switchTab('car',this)">🚗 Car</button>
+    </div>
+    <div id="panel-train" class="transport-panel active">
+      <div class="t-card" id="t-0" onclick="selectTransport('t-0')">
+        <div class="t-header"><div><div class="t-name">Pavia → Camogli / Recco</div><div class="t-sub">Trenitalia · change at Genova Brignole</div></div><div class="price-pill">~€18–22 pp</div></div>
+        <div class="route-line"><div class="route-dot"></div><span>Pavia</span><div class="route-dash"></div><span>~1h 45m</span><div class="route-dash"></div><span>Camogli / Recco</span><div class="route-dot"></div></div>
+        <div class="t-details"><span>🕐 ~1h 45m</span><span>📅 Hourly</span><span id="tt-0">💶 ~€72–88 total (4 pax)</span></div>
+      </div>
+      <div class="t-card" id="t-1" onclick="selectTransport('t-1')">
+        <div class="t-header"><div><div class="t-name">Pavia → Finale Ligure</div><div class="t-sub">Trenitalia · direct or 1 change</div></div><div class="price-pill">~€17–22 pp</div></div>
+        <div class="route-line"><div class="route-dot"></div><span>Pavia</span><div class="route-dash"></div><span>~2h 05m</span><div class="route-dash"></div><span>Finale Ligure</span><div class="route-dot"></div></div>
+        <div class="t-details"><span>🕐 ~2h direct</span><span>📅 ~23 trains/day</span><span id="tt-1">💶 ~€68–88 total (4 pax)</span></div>
+      </div>
+      <div class="hint">💡 Book on trenitalia.com — July prices rise fast. FrecciaDAYS discounts can save up to 60%.</div>
+    </div>
+    <div id="panel-car" class="transport-panel">
+      <div class="t-card" id="t-car" onclick="selectTransport('t-car')">
+        <div class="t-header"><div><div class="t-name">Pavia → Ligurian coast</div><div class="t-sub">Via A26 + A7 autostrada · ~130 km</div></div><div class="price-pill">~€45–60 total</div></div>
+        <div class="route-line"><div class="route-dot"></div><span>Pavia</span><div class="route-dash"></div><span>~1h 30m</span><div class="route-dash"></div><span>coast</span><div class="route-dot"></div></div>
+        <div class="t-details"><span>🕐 ~1h 30m</span><span>🛣️ A26 → A7 → A12</span><span>💶 Fuel + tolls split</span></div>
+      </div>
+      <div class="hint">⚠️ Parking in July is scarce — factor in €10–20/day.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Explore the coast</div>
+    <div class="section-sub">Click a pin to see photos and search for accommodation in that town.</div>
+    <div id="map"></div>
+    <div class="spot-panel" id="spot-panel">
+      <div class="spot-header">
+        <div><div class="spot-name" id="spot-name"></div><div class="spot-desc" id="spot-desc"></div></div>
+        <button class="spot-close" onclick="closeSpot()">✕</button>
+      </div>
+      <div class="carousel" id="carousel">
+        <button class="car-btn car-prev" onclick="carStep(-1)">‹</button>
+        <button class="car-btn car-next" onclick="carStep(1)">›</button>
+        <div class="car-dots" id="car-dots"></div>
+      </div>
+      <div class="search-links" id="search-links"></div>
+      <div class="search-hint" id="search-hint"></div>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="summary-title">Trip summary</div>
+    <div id="summary-content"><div class="s-empty">Select transport above and a destination on the map 👆</div></div>
+  </div>
+
+  <div class="cta">
+    <p class="cta-text">Made your pick? Let Sandro know! 🙌</p>
+    <button class="cta-btn" onclick="copyVote()">Copy my vote to share</button>
+    <p id="copy-confirm">✓ Copied to clipboard!</p>
+  </div>
+</div>
+<footer>Made with ☀️ for the July 2026 Liguria crew</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Google Drive direct embed URL — works on any hosted page when files are shared publicly
+function gd(id){ return 'https://drive.google.com/thumbnail?id='+id+'&sz=w1200'; }
+
+const SPOTS = [
+  {
+    id:'alassio', name:'Alassio', lat:44.0090, lng:8.1730,
+    vibe:'🌟 3km of golden sand · Crystal water · Classic Riviera resort',
+    desc:'The most classically "beach" destination on this list — 3 kilometres of golden sandy beach, crystal-clear water, and a charming old town with the famous muretto.',
+    photos:[
+      { id:'1p_9cspAPQzPjTDY0M6-fF7Us2DIBVIqd', cap:'Alassio' },
+      { id:'1ehgH_zVLAhEce7GDg99bkN4OY8qkbKn3', cap:'Alassio' },
+      { id:'1EDvYUa4qVOkHasIZOio6cXyepGTUeWDM', cap:'Alassio' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Alassio--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Alassio%2C+Liguria&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~2h 20m'
+  },
+  {
+    id:'camogli', name:'Camogli', lat:44.3436, lng:9.1542,
+    vibe:'🎣 Charming fishing village · Pebble beach · Colourful seafront',
+    desc:'Tall pastel houses crowded along a pebble beach, a small fishing harbour, and a beautiful promenade. Very authentic — much less crowded than Cinque Terre.',
+    photos:[
+      { id:'1AHzzRD3BrF6Oqr9bA8zY5SCG1OxnL4BM', cap:'Camogli' },
+      { id:'1RTSF3eB7otq21G_8zfiOppaiI0GrRXjX', cap:'Camogli' },
+      { id:'18dVoFMwnTf3TXtueW0e5UDdqIo17hZ3Z', cap:'Camogli' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Camogli--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Camogli&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~1h 45m'
+  },
+  {
+    id:'recco', name:'Recco', lat:44.3630, lng:9.1430,
+    vibe:'🧀 Authentic & local · Near beach · Famous focaccia col formaggio',
+    desc:'Quieter and more local than neighbouring Camogli. Famous for its focaccia col formaggio, a short walk to the beach, and excellent train links.',
+    photos:[
+      { id:'1Ii86qNO23Yt6vE3E_p71P7KMpzAKo7o6', cap:'Recco' },
+      { id:'1uKbXw5uDtmDdh32R9xfwBnPNljzvJNkD', cap:'Recco' },
+      { id:'1aIDKcwsfHhZU0EOLtKTK8OLxen9_kcB6', cap:'Recco' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Recco--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Recco%2C+Liguria&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~1h 45m'
+  },
+  {
+    id:'sml', name:'Santa Margherita Ligure', lat:44.3359, lng:9.2106,
+    vibe:'⛵ Elegant harbour · Sandy & pebble beaches · Gateway to Portofino',
+    desc:'A refined resort town with a beautiful harbour, lovely beaches, and the ferry to Portofino. Buzzing in July with great restaurants and a proper beach club scene.',
+    photos:[
+      { id:'1zLWOaRv9od-Sqt94bogvo0PEzLKg60sJ', cap:'Santa Margherita Ligure' },
+      { id:'13Z1lKu0Kp-5mDpb1PHNNqB48x2Xwya6q', cap:'Santa Margherita Ligure' },
+      { id:'1eS4Dx4AOAPUb0hdsF3pZ2EJmGnv_yzgp', cap:'Santa Margherita Ligure' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Santa-Margherita-Ligure--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Santa+Margherita+Ligure&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~1h 50m'
+  },
+  {
+    id:'sestri', name:'Sestri Levante', lat:44.2720, lng:9.3940,
+    vibe:'🤫 Two gorgeous bays · Sandy beach · Baia del Silenzio',
+    desc:'One of Liguria\'s most beautiful towns — a peninsula between two stunning bays. The Baia del Silenzio is one of the most photographed beaches in all of Italy.',
+    photos:[
+      { id:'1zLbEhlKh8UdmMYnOyxUdtOo0ovWqgmls', cap:'Sestri Levante' },
+      { id:'1dUaAtwvsY2qA_eaxl7hEQGqq9glK0LSu', cap:'Sestri Levante' },
+      { id:'1y2KNO1vr2uT0VlmqEmNMRLcCw2TBATHy', cap:'Sestri Levante' },
+      { id:'1Wkgpq9NOcQOC3cm5pPH9sPPfeaKiOjVY', cap:'Sestri Levante' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Sestri-Levante--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Sestri+Levante&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~2h 10m'
+  },
+  {
+    id:'finale', name:'Finale Ligure', lat:44.1709, lng:8.3434,
+    vibe:'🏄 Long sandy beach · Most direct train · Relaxed summer vibe',
+    desc:'Long stretches of sandy beach, a charming medieval old town (Finalborgo), and the most direct train from Pavia. Great for sunbathing and easy evenings out.',
+    photos:[
+      { id:'1kHI_tJjN2tR-4NTL-UL5aH3Zz3ZNrFaa', cap:'Finale Ligure' },
+      { id:'1YIh0wIodLBF3KZx68U-vvlwX20jpvM9e', cap:'Finale Ligure' },
+      { id:'1_jLe4-Ywn2RJwYuMt-ZIte4FEwU9r_sF', cap:'Finale Ligure' },
+      { id:'180XeZZCOLb49Z_K8qAJdMEOEE7vL8iVC', cap:'Finale Ligure' }
+    ],
+    airbnb:'https://www.airbnb.com/s/Finale-Ligure--Italy/homes?checkin=2026-07-14&checkout=2026-07-16&adults=GUESTS',
+    booking:'https://www.booking.com/searchresults.en-gb.html?ss=Finale+Ligure&checkin=2026-07-14&checkout=2026-07-16&group_adults=GUESTS&no_rooms=1',
+    trainTime:'~2h 05m'
+  }
+];
+
+const TRANSPORT = {
+  't-0':  {label:'Train · Pavia → Camogli/Recco', ppLo:18, ppHi:22, car:false},
+  't-1':  {label:'Train · Pavia → Finale Ligure',  ppLo:17, ppHi:22, car:false},
+  't-car':{label:'Car · Pavia → Ligurian coast',   car:true, flatLo:45, flatHi:60}
+};
+
+let people=4, selT=null, selSpot=null, carIdx=0;
+
+const map = L.map('map',{zoomControl:true}).setView([44.18,8.80],9);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:18
+}).addTo(map);
+SPOTS.forEach(s=>{
+  const icon=L.divIcon({className:'',html:`<div class="custom-pin" id="pin-${s.id}">${s.name}</div>`,iconAnchor:[0,0]});
+  L.marker([s.lat,s.lng],{icon}).addTo(map).on('click',()=>openSpot(s.id));
+});
+
+function openSpot(id){
+  const spot=SPOTS.find(s=>s.id===id);
+  selSpot=id;
+  SPOTS.forEach(s=>{const p=document.getElementById('pin-'+s.id);if(p)p.classList.remove('active-pin');});
+  const pin=document.getElementById('pin-'+id);if(pin)pin.classList.add('active-pin');
+  document.getElementById('spot-name').textContent=spot.name;
+  document.getElementById('spot-desc').innerHTML=`<strong style="color:var(--text);display:block;margin-bottom:3px">${spot.vibe}</strong>${spot.desc}`;
+
+  const car=document.getElementById('carousel');
+  car.querySelectorAll('.c-slide').forEach(el=>el.remove());
+  document.getElementById('car-dots').innerHTML='';
+  carIdx=0;
+
+  spot.photos.forEach((ph,i)=>{
+    const slide=document.createElement('div');
+    slide.className='c-slide'+(i===0?' active':'');
+    const img=document.createElement('img');
+    img.src=gd(ph.id);
+    img.alt=ph.cap;
+    img.loading='lazy';
+    const cap=document.createElement('div');
+    cap.className='c-caption';
+    cap.textContent=ph.cap;
+    slide.appendChild(img);
+    slide.appendChild(cap);
+    car.insertBefore(slide,car.querySelector('.car-btn'));
+    const dot=document.createElement('div');
+    dot.className='c-dot'+(i===0?' active':'');
+    dot.onclick=(e)=>{e.stopPropagation();goSlide(i);};
+    document.getElementById('car-dots').appendChild(dot);
+  });
+
+  const ab=spot.airbnb.replace(/GUESTS/g,people);
+  const bk=spot.booking.replace(/GUESTS/g,people);
+  document.getElementById('search-links').innerHTML=`
+    <a class="search-btn" href="${ab}" target="_blank" rel="noopener"><span class="src-tag">Airbnb</span>Search ${spot.name} ↗</a>
+    <a class="search-btn" href="${bk}" target="_blank" rel="noopener"><span class="src-tag">Booking.com</span>Search ${spot.name} ↗</a>`;
+  document.getElementById('search-hint').textContent=`Pre-filtered for ${people} guests · check-in 14 Jul, check-out 16 Jul · ${spot.trainTime} from Pavia by train`;
+  document.getElementById('spot-panel').classList.add('visible');
+  setTimeout(()=>document.getElementById('spot-panel').scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+  updateSummary();
+}
+
+function closeSpot(){
+  selSpot=null;
+  document.getElementById('spot-panel').classList.remove('visible');
+  SPOTS.forEach(s=>{const p=document.getElementById('pin-'+s.id);if(p)p.classList.remove('active-pin');});
+  updateSummary();
+}
+
+function goSlide(idx){
+  const slides=document.querySelectorAll('.c-slide');
+  const dots=document.querySelectorAll('.c-dot');
+  if(!slides.length)return;
+  slides[carIdx].classList.remove('active');
+  dots[carIdx]&&dots[carIdx].classList.remove('active');
+  carIdx=(idx+slides.length)%slides.length;
+  slides[carIdx].classList.add('active');
+  dots[carIdx]&&dots[carIdx].classList.add('active');
+}
+function carStep(d){goSlide(carIdx+d);}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.transport-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  selT=null;document.querySelectorAll('.t-card').forEach(c=>c.classList.remove('selected'));
+  updateSummary();
+}
+function selectTransport(id){
+  selT=id;document.querySelectorAll('.t-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById(id).classList.add('selected');updateSummary();
+}
+function changePeople(d){
+  people=Math.max(2,Math.min(6,people+d));
+  document.getElementById('pcount').textContent=people;
+  updateTrainLabels();if(selSpot)openSpot(selSpot);updateSummary();
+}
+function updateTrainLabels(){
+  const el0=document.getElementById('tt-0'),el1=document.getElementById('tt-1');
+  if(el0)el0.textContent='💶 ~€'+(18*people)+'–€'+(22*people)+' total ('+people+' pax)';
+  if(el1)el1.textContent='💶 ~€'+(17*people)+'–€'+(22*people)+' total ('+people+' pax)';
+}
+function updateSummary(){
+  const el=document.getElementById('summary-content');
+  if(!selT&&!selSpot){el.innerHTML='<div class="s-empty">Select transport above and a destination on the map 👆</div>';return;}
+  let rows='';
+  if(selT){
+    const t=TRANSPORT[selT];
+    const lo=t.car?t.flatLo:t.ppLo*people,hi=t.car?t.flatHi:t.ppHi*people;
+    rows+=`<div class="s-row"><span class="lbl">${t.label}</span><span class="val">€${lo}–€${hi}</span></div>`;
+  } else {
+    rows+=`<div class="s-row"><span class="lbl" style="opacity:.5">Transport</span><span class="val" style="opacity:.5">Not yet selected</span></div>`;
+  }
+  rows+=selSpot
+    ?`<div class="s-row"><span class="lbl">Destination — ${SPOTS.find(s=>s.id===selSpot).name}</span><span class="val">Use search links above ↑</span></div>`
+    :`<div class="s-row"><span class="lbl" style="opacity:.5">Destination</span><span class="val" style="opacity:.5">Click a pin on the map</span></div>`;
+  let totalHtml='';
+  if(selT){
+    const t=TRANSPORT[selT];
+    const lo=t.car?t.flatLo:t.ppLo*people,hi=t.car?t.flatHi:t.ppHi*people;
+    const ppLo=Math.round(lo/people),ppHi=Math.round(hi/people);
+    totalHtml=`<div class="s-total"><span class="lbl">Transport estimate</span><span class="val">€${lo}–€${hi}</span></div>
+               <div class="s-pp">~€${ppLo}–€${ppHi} per person · accommodation varies by choice on Airbnb / Booking.com</div>`;
+  }
+  el.innerHTML=rows+totalHtml;
+}
+function copyVote(){
+  const tName=selT?TRANSPORT[selT].label:'no transport chosen';
+  const sName=selSpot?SPOTS.find(s=>s.id===selSpot).name:'no destination chosen';
+  const msg=`My pick for the Liguria trip 🌊\n📍 ${sName}\n🚌 ${tName}\n👥 ${people} people`;
+  navigator.clipboard.writeText(msg).then(()=>{
+    const c=document.getElementById('copy-confirm');c.style.display='block';
+    setTimeout(()=>c.style.display='none',3000);
+  }).catch(()=>alert(msg));
+}
+updateTrainLabels();
+</script>
+</body>
+</html>
